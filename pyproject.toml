@@ -1,0 +1,16 @@
+[tool.poetry]
+name = "gregg-and-tylers-excellent-adventures-in-data-science"
+version = "0.1.0"
+description = "Place to work on datascience projects"
+authors = ["Greg Hamilton <hamiltong143@gmail.com>"]
+readme = "README.md"
+packages = [{include = "utilities"}]
+
+[tool.poetry.dependencies]
+python = "^3.12"
+numpy = "^1.26.4"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

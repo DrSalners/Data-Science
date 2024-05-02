@@ -14,6 +14,8 @@ powerlaw = "^1.5"
 networkx = "^3.3"
 pandas = "^2.2.2"
 pytest = "^8.2.0"
+ruff = "^0.4.2"
+black = "^24.4.2"
 
 [virtualenvs]
 create = true

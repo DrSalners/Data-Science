@@ -27,4 +27,4 @@ jobs:
       - name: Test with pytest
         run: |
           pip install pytest pytest-cov
-          poetry run python -m pytest --cov-report=html:coverage --cov=utilities
+          poetry run python -m pytest

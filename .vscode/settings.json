@@ -1,0 +1,8 @@
+{
+    "python.testing.pytestArgs":[
+        "utilities"
+    ],
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestEnbled": true,
+    "python.defaultInterpreterPath": "/Users/tylersalners/Library/Caches/pypoetry/virtualenvs/data-science-BO4Ymgz9-py3.12/.venv/Scripts/python.exe"
+}

@@ -9,23 +9,24 @@ import pickle
 import glob, os.path
 import networkx as nx
 import pandas as pd
-import robin_stocks as rs
-import pyotp
 
-# Function 1: Finding the autocorrelation function from a time series.
-def autocorr(fires: list[float],
+def autocorr(timeseries: list[float],
              stepnumber: int
-             )-> list:
+             )-> list[list[int],list[float]]:
     """Computes autocorrelation function using a multistep regression estimation.
-    Args:
-    
-    Returns:
 
+    Args:
+        timeseries (list[float]): timeseries to compute autocorrelation of.
+        stepnumber (int): number of regression steps to take.
+
+    Returns:
+        steps (list[int]): list of integer steps [1, 2, ..., stepnumber]
+        rk (list[float]): multistep regression estimate (autocorrelation function)
     """
     rk=[]
     steps=np.arange(1,stepnumber,1)
     for k in steps:
-        res=sp.linregress(fires[:-k], fires[k:])
+        res=sp.linregress(timeseries[:-k], timeseries[k:])
         rk.append(res[0])
     return [steps,rk]
 
@@ -2368,11 +2369,6 @@ def moving_average(a, n=3) :
     ret[n:] = ret[n:] - ret[:-n]
     return ret[n - 1:] / n
 
-def login(keycode,username,password):
-    totp = pyotp.TOTP(keycode).now()
-    print("Current OTP:", totp)
-    Login = rs.robinhood.login(username, password, mfa_code=totp)
-    print ('pensiii')
 def surface_plot(matrix,**kwargs):
     # acquire the cartesian coordinate matrices from the matrix
     # x is cols, y is rows

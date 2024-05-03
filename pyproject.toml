@@ -1,16 +1,21 @@
 [tool.poetry]
-name = "gregg-and-tylers-excellent-adventures-in-data-science"
+name = "Data-Science"
 version = "0.1.0"
 description = "Place to work on datascience projects"
-authors = ["Greg Hamilton <hamiltong143@gmail.com>"]
+authors = ["Tyler Salners <tsalners@gmail.com>", "Greg Hamilton <hamiltong143@gmail.com>"]
 readme = "README.md"
 packages = [{include = "utilities"}]
 
 [tool.poetry.dependencies]
 python = "^3.12"
 numpy = "^1.26.4"
+scipy = "^1.13.0"
+powerlaw = "^1.5"
+networkx = "^3.3"
+pandas = "^2.2.2"
 pytest = "^8.2.0"
-
+ruff = "^0.4.2"
+black = "^24.4.2"
 
 [build-system]
 requires = ["poetry-core"]

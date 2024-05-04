@@ -11,7 +11,75 @@ import networkx as nx
 import pandas as pd
 
 
-def autocorr(timeseries: list[float], stepnumber: int) -> list[list[int], list[float]]:
+def autocorr(timeseries: list[float | int] | np.ndarray[float | int],
+             stepnumber: int,
+             ) -> list[np.ndarray[int], np.ndarray[float]]:
+    """Computes autocorrelation function using a multistep regression estimation.
+
+    Args:
+        timeseries (list[float | int] | np.array[float | int]): timeseries to compute autocorrelation of.
+        stepnumber (int): number of regression steps to take.
+
+    Returns:
+        steps (list[int]): list of integer steps [1, 2, ..., stepnumber].
+        acf (list[float]): multistep regression estimate (autocorrelation function).
+    """
+    steps = np.arange(1, stepnumber, 1)
+    acf=[sp.linregress(timeseries[:-k], timeseries[k:])[0] for k in steps]
+    return [steps, acf]
+
+
+def find_nearest(data: list[float],
+                 value: float | int,
+                 ) -> int:
+    """Finds sample from data set closes to a target value.
+
+    Args:
+        data (list[float]): data to search.
+        value (float | int): number of regression steps to take.
+
+    Returns:
+        indnear (int): index where data is closest to target value.
+    """
+    near = [abs(i - value) for i in data]
+    indnear = near.index(min(near))
+    return indnear
+
+
+def parabdist(n: int,
+              w: float | int,
+              for_test: bool=False
+              ) -> list[float]:
+    """Generates n samples from a parabolic distribution with width w.
+    parabolic distribution -> f(x)=3/(2w^3)(w^2-4x^2)
+
+    Args:
+        n (int): number of samples to draw.
+        w (float | int): width of distribution to sample.
+        for_test (bool): if true, uses seed value "15" for unit-testing. Defaults to False.
+
+    Returns:
+        dis (list[float]): list of samples drawn from parabolic distribution.
+
+    """
+    if for_test:
+        np.random.seed(15)
+    else:
+        np.random.seed()
+        
+    x = np.linspace(-w / 2.0, w / 2.0, n)
+    f = (3.0 / (2.0 * w**3)) * (w**2 - 4 * x**2)
+    g = (
+        (3.0 / 2.0)
+        * w ** (-3.0)
+        * (((w ** (3.0) / 3.0) + (w ** (2.0) * x) - ((4.0 / 3.0) * x ** (3.0))))
+    )
+    dis = [x[find_nearest(g,np.random.uniform(0,1,1))] for i in range(n)]
+    return dis
+
+
+# Function 7: estimating branching ratio with MSR estimator
+def mrestimate(fires, steps, isi):
     """Computes autocorrelation function using a multistep regression estimation.
 
     Args:
@@ -22,47 +90,23 @@ def autocorr(timeseries: list[float], stepnumber: int) -> list[list[int], list[f
         steps (list[int]): list of integer steps [1, 2, ..., stepnumber]
         rk (list[float]): multistep regression estimate (autocorrelation function)
     """
-    rk = []
-    steps = np.arange(1, stepnumber, 1)
-    for k in steps:
-        res = sp.linregress(timeseries[:-k], timeseries[k:])
-        rk.append(res[0])
-    return [steps, rk]
-
-
-# Function 4: Generate parabolic distribution
-def find_nearest(array, value):
-    near = [abs(i - value) for i in array]
-    indnear = near.index(min(near))
-    return indnear
-
-
-def parabdist(len, w):
-    np.random.seed()
-    x = np.linspace(-w / 2.0, w / 2.0, len)
-    f = (3.0 / (2.0 * w**3)) * (w**2 - 4 * x**2)
-    g = (
-        (3.0 / 2.0)
-        * w ** (-3.0)
-        * (((w ** (3.0) / 3.0) + (w ** (2.0) * x) - ((4.0 / 3.0) * x ** (3.0))))
-    )
-    dis = []
-    for i in range(len):
-        rand = np.random.uniform(0, 1, 1)
-        spot = find_nearest(g, rand)
-        dis.append(x[spot])
-    return dis
-
-
-# Function 7: estimating branching ratio with MSR estimator
-def mrestimate(fires, steps, isi):
     steps, rk = autocorr(fires, steps)
-    res2 = sp.stats.linregress(steps, np.log(rk))
-    m = np.exp(res2[0] * isi)  ## fix this: I don't know why isi is here
+    m = np.exp(sp.stats.linregress(steps, np.log(rk))[0] * isi)  
+    #TODO: fix this: I don't know why isi is here
 
 
 # Function 8: DFA
 def dfa(signal, min, max, num):
+    """Computes autocorrelation function using a multistep regression estimation.
+
+    Args:
+        timeseries (list[float]): timeseries to compute autocorrelation of.
+        stepnumber (int): number of regression steps to take.
+
+    Returns:
+        steps (list[int]): list of integer steps [1, 2, ..., stepnumber]
+        rk (list[float]): multistep regression estimate (autocorrelation function)
+    """
     signal = np.cumsum(signal)
     x = np.logspace(np.log10(min), np.log10(max), num)
     y = []
@@ -85,6 +129,16 @@ def dfa(signal, min, max, num):
 
 # Function 10: Kappa (see Poil 2011)
 def kappa(s):
+    """Computes autocorrelation function using a multistep regression estimation.
+
+    Args:
+        timeseries (list[float]): timeseries to compute autocorrelation of.
+        stepnumber (int): number of regression steps to take.
+
+    Returns:
+        steps (list[int]): list of integer steps [1, 2, ..., stepnumber]
+        rk (list[float]): multistep regression estimate (autocorrelation function)
+    """
     [x, y] = getcumdist(s)
     y = 1 - y
     yth = 1 - x ** (-0.7)
@@ -99,6 +153,16 @@ def kappa(s):
 
 # Function 13: Log-binning
 def log_binning(bininput, quantityinput, numbins):
+    """Computes autocorrelation function using a multistep regression estimation.
+
+    Args:
+        timeseries (list[float]): timeseries to compute autocorrelation of.
+        stepnumber (int): number of regression steps to take.
+
+    Returns:
+        steps (list[int]): list of integer steps [1, 2, ..., stepnumber]
+        rk (list[float]): multistep regression estimate (autocorrelation function)
+    """
     m = 0
     binbounds = np.logspace(
         np.log10(min(bininput)), np.log10(max(bininput)), numbins + 1
@@ -120,6 +184,16 @@ def log_binning(bininput, quantityinput, numbins):
 
 
 def log_binning_2(bininput, quantityinput, numbins, type):
+    """Computes autocorrelation function using a multistep regression estimation.
+
+    Args:
+        timeseries (list[float]): timeseries to compute autocorrelation of.
+        stepnumber (int): number of regression steps to take.
+
+    Returns:
+        steps (list[int]): list of integer steps [1, 2, ..., stepnumber]
+        rk (list[float]): multistep regression estimate (autocorrelation function)
+    """
     m = 0
     binbounds = np.logspace(
         np.log10(min(bininput)), np.log10(max(bininput)), numbins + 1
@@ -148,6 +222,16 @@ def log_binning_2(bininput, quantityinput, numbins, type):
 
 
 def log_binning_3(bininput, quantityinput, numbins, type):
+    """Computes autocorrelation function using a multistep regression estimation.
+
+    Args:
+        timeseries (list[float]): timeseries to compute autocorrelation of.
+        stepnumber (int): number of regression steps to take.
+
+    Returns:
+        steps (list[int]): list of integer steps [1, 2, ..., stepnumber]
+        rk (list[float]): multistep regression estimate (autocorrelation function)
+    """
     m = 0
     binbounds = np.linspace(min(bininput), max(bininput), numbins + 1)
     print(binbounds)
@@ -174,6 +258,16 @@ def log_binning_3(bininput, quantityinput, numbins, type):
 
 
 def log_binning_nan(bininput, quantityinput, numbins):
+    """Computes autocorrelation function using a multistep regression estimation.
+
+    Args:
+        timeseries (list[float]): timeseries to compute autocorrelation of.
+        stepnumber (int): number of regression steps to take.
+
+    Returns:
+        steps (list[int]): list of integer steps [1, 2, ..., stepnumber]
+        rk (list[float]): multistep regression estimate (autocorrelation function)
+    """
     binbounds = np.logspace(np.log10(1), np.log10(max(bininput)), numbins + 1)
     X = np.zeros(numbins)
     Y = np.zeros(numbins)
@@ -191,6 +285,16 @@ def log_binning_nan(bininput, quantityinput, numbins):
 
 
 def binning(bininput, quantityinput, numbins):
+    """Computes autocorrelation function using a multistep regression estimation.
+
+    Args:
+        timeseries (list[float]): timeseries to compute autocorrelation of.
+        stepnumber (int): number of regression steps to take.
+
+    Returns:
+        steps (list[int]): list of integer steps [1, 2, ..., stepnumber]
+        rk (list[float]): multistep regression estimate (autocorrelation function)
+    """
     binbounds = np.linspace(min(bininput), max(bininput), numbins + 1)
     X = np.zeros(numbins)
     Y = np.zeros(numbins)
@@ -209,6 +313,16 @@ def binning(bininput, quantityinput, numbins):
 
 # Function 14: Bitest
 def bitest(starts):
+    """Computes autocorrelation function using a multistep regression estimation.
+
+    Args:
+        timeseries (list[float]): timeseries to compute autocorrelation of.
+        stepnumber (int): number of regression steps to take.
+
+    Returns:
+        steps (list[int]): list of integer steps [1, 2, ..., stepnumber]
+        rk (list[float]): multistep regression estimate (autocorrelation function)
+    """
     H = []
     for i in np.arange(2, len(starts) - 2, 1):
         t1 = starts[i + 1] - starts[i]
@@ -229,6 +343,16 @@ def bitest(starts):
 
 # Function 15: Create spiking rate signal from raw time stamps
 def spikingrate(spikes, dt):
+    """Computes autocorrelation function using a multistep regression estimation.
+
+    Args:
+        timeseries (list[float]): timeseries to compute autocorrelation of.
+        stepnumber (int): number of regression steps to take.
+
+    Returns:
+        steps (list[int]): list of integer steps [1, 2, ..., stepnumber]
+        rk (list[float]): multistep regression estimate (autocorrelation function)
+    """
     spikes = np.unique(spikes)
     time = np.arange(np.min(spikes) - 1, np.max(spikes) + 1, dt)
     fires = np.zeros(len(time))
@@ -247,6 +371,16 @@ def spikingrate(spikes, dt):
 
 # Function 16: Powerspec
 def powerspec(dt, data):
+    """Computes autocorrelation function using a multistep regression estimation.
+
+    Args:
+        timeseries (list[float]): timeseries to compute autocorrelation of.
+        stepnumber (int): number of regression steps to take.
+
+    Returns:
+        steps (list[int]): list of integer steps [1, 2, ..., stepnumber]
+        rk (list[float]): multistep regression estimate (autocorrelation function)
+    """
     n = len(data)
     spec = np.fft.rfft(data, n)
     sp = spec * np.conj(spec) / n
@@ -263,6 +397,16 @@ def powerspec(dt, data):
 
 # Function 17: Histogram
 def tyler_pdf(starts, binnum, minn, maxx, type, density):
+    """Computes autocorrelation function using a multistep regression estimation.
+
+    Args:
+        timeseries (list[float]): timeseries to compute autocorrelation of.
+        stepnumber (int): number of regression steps to take.
+
+    Returns:
+        steps (list[int]): list of integer steps [1, 2, ..., stepnumber]
+        rk (list[float]): multistep regression estimate (autocorrelation function)
+    """
     if type == "log":
         logbins = np.logspace(np.log10(minn), np.log10(maxx), binnum)
     else:
@@ -275,6 +419,16 @@ def tyler_pdf(starts, binnum, minn, maxx, type, density):
 
 # Function 18: MSD
 def msd(shapes, sizes):
+    """Computes autocorrelation function using a multistep regression estimation.
+
+    Args:
+        timeseries (list[float]): timeseries to compute autocorrelation of.
+        stepnumber (int): number of regression steps to take.
+
+    Returns:
+        steps (list[int]): list of integer steps [1, 2, ..., stepnumber]
+        rk (list[float]): multistep regression estimate (autocorrelation function)
+    """
     vel = np.zeros(len(sizes))
     for i in range(len(sizes)):
 
@@ -285,6 +439,16 @@ def msd(shapes, sizes):
 
 # Function 19: Surface plotter
 def surface_plot(matrix, errmat, **kwargs):
+    """Computes autocorrelation function using a multistep regression estimation.
+
+    Args:
+        timeseries (list[float]): timeseries to compute autocorrelation of.
+        stepnumber (int): number of regression steps to take.
+
+    Returns:
+        steps (list[int]): list of integer steps [1, 2, ..., stepnumber]
+        rk (list[float]): multistep regression estimate (autocorrelation function)
+    """
     # acquire the cartesian coordinate matrices from the matrix
     # x is cols, y is rows
     (x, y) = np.meshgrid(np.arange(matrix.shape[0]), np.arange(matrix.shape[1]))
@@ -299,6 +463,16 @@ def surface_plot(matrix, errmat, **kwargs):
 
 # Function 20: Get cummulative distribution with error bars
 def inc_Beta_Fit(x, a, b, target):
+    """Computes autocorrelation function using a multistep regression estimation.
+
+    Args:
+        timeseries (list[float]): timeseries to compute autocorrelation of.
+        stepnumber (int): number of regression steps to take.
+
+    Returns:
+        steps (list[int]): list of integer steps [1, 2, ..., stepnumber]
+        rk (list[float]): multistep regression estimate (autocorrelation function)
+    """
     return np.abs(special.betainc(a, b, x) - target)
 
 
@@ -312,6 +486,16 @@ from matplotlib import pyplot as plt
 # This function finds the nearest point in an array to a given value. It takes in array, an array, and value, a float.
 # It outputs idx, an int, which is the index of the nearest point.
 def find_nearest(array, value):
+    """Computes autocorrelation function using a multistep regression estimation.
+
+    Args:
+        timeseries (list[float]): timeseries to compute autocorrelation of.
+        stepnumber (int): number of regression steps to take.
+
+    Returns:
+        steps (list[int]): list of integer steps [1, 2, ..., stepnumber]
+        rk (list[float]): multistep regression estimate (autocorrelation function)
+    """
     near = [abs(i - value) for i in array]
     indnear = near.index(min(near))
     return indnear
@@ -321,6 +505,16 @@ def find_nearest(array, value):
 # bins is the centers of the bins to be sorted into, type is a str and either 'size' or 'duration' is what you are binning by, and
 # width is the width of the bins. It outputs lists times_sorted, shapes_sorted, durs_sorted, avs_sorted which are those binned and sorted.
 def shape_bins(durs, avs, shapes, times, bins, type, width):
+    """Computes autocorrelation function using a multistep regression estimation.
+
+    Args:
+        timeseries (list[float]): timeseries to compute autocorrelation of.
+        stepnumber (int): number of regression steps to take.
+
+    Returns:
+        steps (list[int]): list of integer steps [1, 2, ..., stepnumber]
+        rk (list[float]): multistep regression estimate (autocorrelation function)
+    """
     # first sort the arrays
     shapes = np.asarray(shapes)
     times = np.asarray(times)
@@ -371,6 +565,16 @@ def shape_bins(durs, avs, shapes, times, bins, type, width):
 
 
 def size_avg(shapes, times, avs, durs):
+    """Computes autocorrelation function using a multistep regression estimation.
+
+    Args:
+        timeseries (list[float]): timeseries to compute autocorrelation of.
+        stepnumber (int): number of regression steps to take.
+
+    Returns:
+        steps (list[int]): list of integer steps [1, 2, ..., stepnumber]
+        rk (list[float]): multistep regression estimate (autocorrelation function)
+    """
     shapes_final = []
     err_final = []
     times_final = []
@@ -398,6 +602,16 @@ def size_avg(shapes, times, avs, durs):
 # This averages over durations. It takes lists shapes,times,avs,durs the output of get_slips. It outputs lists times_final,
 # shapes_final, and err_final the time, velocity, and error vectors respectively.
 def duration_avg(shapes, times, avs, durs):
+    """Computes autocorrelation function using a multistep regression estimation.
+
+    Args:
+        timeseries (list[float]): timeseries to compute autocorrelation of.
+        stepnumber (int): number of regression steps to take.
+
+    Returns:
+        steps (list[int]): list of integer steps [1, 2, ..., stepnumber]
+        rk (list[float]): multistep regression estimate (autocorrelation function)
+    """
     shapes_final = []
     err_final = []
     times_final = []
@@ -431,6 +645,16 @@ def duration_avg(shapes, times, avs, durs):
 # This code takes a vector and resizes it to a desired length. It takes a list vector and an associate list time. length is and int and
 # is the desired len of the result. It outputs two lists points, the normalized time vector, and new, the new vector.
 def resize(vector, time, length):
+    """Computes autocorrelation function using a multistep regression estimation.
+
+    Args:
+        timeseries (list[float]): timeseries to compute autocorrelation of.
+        stepnumber (int): number of regression steps to take.
+
+    Returns:
+        steps (list[int]): list of integer steps [1, 2, ..., stepnumber]
+        rk (list[float]): multistep regression estimate (autocorrelation function)
+    """
     time = np.asarray(time)
     vector = np.asarray(vector)
     time = time - time[0]  # so you allways start at 0
@@ -453,10 +677,30 @@ def resize(vector, time, length):
 
 
 def Extract(lst, i):
+    """Computes autocorrelation function using a multistep regression estimation.
+
+    Args:
+        timeseries (list[float]): timeseries to compute autocorrelation of.
+        stepnumber (int): number of regression steps to take.
+
+    Returns:
+        steps (list[int]): list of integer steps [1, 2, ..., stepnumber]
+        rk (list[float]): multistep regression estimate (autocorrelation function)
+    """
     return [item[i] for item in lst]
 
 
 def Scaling_relation(smin, s, dmin, d):
+    """Computes autocorrelation function using a multistep regression estimation.
+
+    Args:
+        timeseries (list[float]): timeseries to compute autocorrelation of.
+        stepnumber (int): number of regression steps to take.
+
+    Returns:
+        steps (list[int]): list of integer steps [1, 2, ..., stepnumber]
+        rk (list[float]): multistep regression estimate (autocorrelation function)
+    """
     test_s = s[s > smin]
     resultss = powerlaw.Fit(test_s, xmin=smin)
     print("smin", resultss.xmin)
@@ -486,6 +730,16 @@ import math
 
 
 def get_S_vs_Ninh(gcc):
+    """Computes autocorrelation function using a multistep regression estimation.
+
+    Args:
+        timeseries (list[float]): timeseries to compute autocorrelation of.
+        stepnumber (int): number of regression steps to take.
+
+    Returns:
+        steps (list[int]): list of integer steps [1, 2, ..., stepnumber]
+        rk (list[float]): multistep regression estimate (autocorrelation function)
+    """
     S = []
     N = []
     D = []
@@ -505,6 +759,16 @@ def get_S_vs_Ninh(gcc):
 
 
 def get_S_vs_Ninh(gcc):
+    """Computes autocorrelation function using a multistep regression estimation.
+
+    Args:
+        timeseries (list[float]): timeseries to compute autocorrelation of.
+        stepnumber (int): number of regression steps to take.
+
+    Returns:
+        steps (list[int]): list of integer steps [1, 2, ..., stepnumber]
+        rk (list[float]): multistep regression estimate (autocorrelation function)
+    """
     S = []
     N = []
     D = []
@@ -542,6 +806,16 @@ def get_S_vs_Ninh(gcc):
 
 
 def get_S_vs_Ninh_2species(gcc, inspec, exspec, unspec):
+    """Computes autocorrelation function using a multistep regression estimation.
+
+    Args:
+        timeseries (list[float]): timeseries to compute autocorrelation of.
+        stepnumber (int): number of regression steps to take.
+
+    Returns:
+        steps (list[int]): list of integer steps [1, 2, ..., stepnumber]
+        rk (list[float]): multistep regression estimate (autocorrelation function)
+    """
     Sinh = np.zeros(len(gcc))
     Ninh = np.zeros(len(gcc))
     Sexc = np.zeros(len(gcc))
@@ -582,6 +856,16 @@ def get_S_vs_Ninh_2species(gcc, inspec, exspec, unspec):
 
 
 def get_S_vs_Ninh_lite(gcc):
+    """Computes autocorrelation function using a multistep regression estimation.
+
+    Args:
+        timeseries (list[float]): timeseries to compute autocorrelation of.
+        stepnumber (int): number of regression steps to take.
+
+    Returns:
+        steps (list[int]): list of integer steps [1, 2, ..., stepnumber]
+        rk (list[float]): multistep regression estimate (autocorrelation function)
+    """
     D = np.zeros(len(gcc))
     ft = []
     fn = []
@@ -618,6 +902,16 @@ def get_S_vs_Ninh_lite(gcc):
 
 
 def T_exp_bootstrap(samplemean, df, N):
+    """Computes autocorrelation function using a multistep regression estimation.
+
+    Args:
+        timeseries (list[float]): timeseries to compute autocorrelation of.
+        stepnumber (int): number of regression steps to take.
+
+    Returns:
+        steps (list[int]): list of integer steps [1, 2, ..., stepnumber]
+        rk (list[float]): multistep regression estimate (autocorrelation function)
+    """
     bootstrapsample = np.random.exponential(scale=samplemean, size=(df, N))
     sample_means = np.mean(bootstrapsample, axis=0)
     mean = np.mean(sample_means)
@@ -626,6 +920,16 @@ def T_exp_bootstrap(samplemean, df, N):
 
 
 def Find_x0_y0(nsamp, isif):
+    """Computes autocorrelation function using a multistep regression estimation.
+
+    Args:
+        timeseries (list[float]): timeseries to compute autocorrelation of.
+        stepnumber (int): number of regression steps to take.
+
+    Returns:
+        steps (list[int]): list of integer steps [1, 2, ..., stepnumber]
+        rk (list[float]): multistep regression estimate (autocorrelation function)
+    """
     ## calculating moment ratios and errors
     isi = (isif,)
     bootstrap_ci = sp.bootstrap(
@@ -717,6 +1021,16 @@ def Find_x0_y0(nsamp, isif):
 
 
 def Find_r_g(nsamp, isif):
+    """Computes autocorrelation function using a multistep regression estimation.
+
+    Args:
+        timeseries (list[float]): timeseries to compute autocorrelation of.
+        stepnumber (int): number of regression steps to take.
+
+    Returns:
+        steps (list[int]): list of integer steps [1, 2, ..., stepnumber]
+        rk (list[float]): multistep regression estimate (autocorrelation function)
+    """
     ## calculating moment ratios and errors
     isi = (isif,)
     bootstrap_ci = sp.bootstrap(
@@ -805,6 +1119,16 @@ def Find_r_g(nsamp, isif):
 
 
 def Find_r_g_special(nsamp, isif):
+    """Computes autocorrelation function using a multistep regression estimation.
+
+    Args:
+        timeseries (list[float]): timeseries to compute autocorrelation of.
+        stepnumber (int): number of regression steps to take.
+
+    Returns:
+        steps (list[int]): list of integer steps [1, 2, ..., stepnumber]
+        rk (list[float]): multistep regression estimate (autocorrelation function)
+    """
     ## calculating moment ratios and errors
     isi = (isif,)
     bootstrap_ci = sp.bootstrap(
@@ -892,6 +1216,16 @@ def Find_r_g_special(nsamp, isif):
 
 
 def prune_beggs(experiment, td):
+    """Computes autocorrelation function using a multistep regression estimation.
+
+    Args:
+        timeseries (list[float]): timeseries to compute autocorrelation of.
+        stepnumber (int): number of regression steps to take.
+
+    Returns:
+        steps (list[int]): list of integer steps [1, 2, ..., stepnumber]
+        rk (list[float]): multistep regression estimate (autocorrelation function)
+    """
     os.chdir("/Users/tylersalners/Desktop/beggs/data/causal_web_pkl")
     filename = "c-pairs_2013-01-%s-000_d-lt-20_rt0.5.pkl" % (experiment)
     f = open(filename, "rb")
@@ -907,6 +1241,16 @@ def prune_beggs(experiment, td):
 
 
 def splitter(t, sig, n):
+    """Computes autocorrelation function using a multistep regression estimation.
+
+    Args:
+        timeseries (list[float]): timeseries to compute autocorrelation of.
+        stepnumber (int): number of regression steps to take.
+
+    Returns:
+        steps (list[int]): list of integer steps [1, 2, ..., stepnumber]
+        rk (list[float]): multistep regression estimate (autocorrelation function)
+    """
     l = np.linspace(np.min(t), np.max(t), n)
     full_sig = []
     full_t = []
@@ -917,6 +1261,16 @@ def splitter(t, sig, n):
 
 
 def tyler_specgram(t, sig, n):
+    """Computes autocorrelation function using a multistep regression estimation.
+
+    Args:
+        timeseries (list[float]): timeseries to compute autocorrelation of.
+        stepnumber (int): number of regression steps to take.
+
+    Returns:
+        steps (list[int]): list of integer steps [1, 2, ..., stepnumber]
+        rk (list[float]): multistep regression estimate (autocorrelation function)
+    """
     f = []
     s = []
     [split_t, split_sig, t_centers] = splitter(t, sig, n)
@@ -928,12 +1282,32 @@ def tyler_specgram(t, sig, n):
 
 
 def moving_average(a, n=3):
+    """Computes autocorrelation function using a multistep regression estimation.
+
+    Args:
+        timeseries (list[float]): timeseries to compute autocorrelation of.
+        stepnumber (int): number of regression steps to take.
+
+    Returns:
+        steps (list[int]): list of integer steps [1, 2, ..., stepnumber]
+        rk (list[float]): multistep regression estimate (autocorrelation function)
+    """
     ret = np.cumsum(a, dtype=float)
     ret[n:] = ret[n:] - ret[:-n]
     return ret[n - 1 :] / n
 
 
 def surface_plot(matrix, **kwargs):
+    """Computes autocorrelation function using a multistep regression estimation.
+
+    Args:
+        timeseries (list[float]): timeseries to compute autocorrelation of.
+        stepnumber (int): number of regression steps to take.
+
+    Returns:
+        steps (list[int]): list of integer steps [1, 2, ..., stepnumber]
+        rk (list[float]): multistep regression estimate (autocorrelation function)
+    """
     # acquire the cartesian coordinate matrices from the matrix
     # x is cols, y is rows
     (x, y) = np.meshgrid(np.arange(matrix.shape[0]), np.arange(matrix.shape[1]))

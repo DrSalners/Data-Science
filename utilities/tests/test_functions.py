@@ -56,3 +56,31 @@ def test_find_nearest(test_data, test_return_index):
 def test_parabdist(test_n,test_w,test_return_distribution):
     """Testing parabdist."""
     assert functions.parabdist(test_n,test_w,for_test=True) == test_return_distribution
+
+
+@pytest.mark.parametrize(
+    ("test_input_data","test_return_x","test_return_y"),
+    (
+        (np.array([0,1,3,4,np.nan]),
+         [0.0, 1.0, 3.0, 4.0],
+         [1.0, 0.75, 0.5, 0.25],
+         ),
+    ),
+)
+def test_get_cum_dist(test_input_data,test_return_x,test_return_y):
+    """Testing get_pdf"""
+    assert functions.get_cum_dist(test_input_data)[0].tolist()==test_return_x
+    assert functions.get_cum_dist(test_input_data)[1].tolist()==test_return_y
+
+
+@pytest.mark.parametrize(
+    ("test_input_data","test_return_x","test_return_y"),
+    (
+        (np.array([0,1,3,4,8,34,5.6,2,67,8,3.4,6,np.nan]),
+         [ 0.0,22.33333333,44.66666667],
+         [0.03731343,0.00373134,0.00373134]),
+    ),
+)
+def test_get_pdf(test_input_data,test_return_x,test_return_y):
+    assert functions.get_pdf(test_input_data,4,'lo',True)[0].tolist() == pytest.approx(test_return_x, abs=1e-6, rel=1e-9)
+    assert functions.get_pdf(test_input_data,4,'lo',True)[1].tolist() == pytest.approx(test_return_y, abs=1e-6, rel=1e-9)

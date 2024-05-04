@@ -13,7 +13,7 @@ import pandas as pd
 
 def autocorr(timeseries: list[float | int] | np.ndarray[float | int],
              stepnumber: int,
-             ) -> list[np.ndarray[int], np.ndarray[float]]:
+             ) -> tuple[np.ndarray[int], np.ndarray[float]]:
     """Computes autocorrelation function using a multistep regression estimation.
 
     Args:
@@ -26,7 +26,7 @@ def autocorr(timeseries: list[float | int] | np.ndarray[float | int],
     """
     steps = np.arange(1, stepnumber, 1)
     acf=[sp.linregress(timeseries[:-k], timeseries[k:])[0] for k in steps]
-    return [steps, acf]
+    return steps, acf
 
 
 def find_nearest(data: list[float],
@@ -66,7 +66,7 @@ def parabdist(n: int,
         np.random.seed(15)
     else:
         np.random.seed()
-        
+
     x = np.linspace(-w / 2.0, w / 2.0, n)
     f = (3.0 / (2.0 * w**3)) * (w**2 - 4 * x**2)
     g = (
@@ -78,7 +78,50 @@ def parabdist(n: int,
     return dis
 
 
-# Function 7: estimating branching ratio with MSR estimator
+def get_cum_dist(data: np.ndarray[float | int],
+                 ) -> tuple[np.ndarray[float | int],np.ndarray[float]]:
+    """Generates complimentary cummulative distribution of given data.
+
+    Args:
+        data (np.ndarray[float | int]): timeseries to compute autocorrelation of.
+        
+    Returns:
+        x (np.ndarray[float | int]): list of (possibly integer) distribution independent variable (i.e., the data).
+        y (np.ndarray[float]): complementary cummulative distribution function
+    """
+    x=np.sort(data[~pd.isna(data)])
+    y=np.linspace(1,0,len(x)+1)[:-1]
+    return x, y
+
+
+def get_pdf(data: np.ndarray[float | int],
+        binnum: int,
+        type: str,
+        density: bool=True,
+        ) -> tuple[np.ndarray[float | int], np.ndarray[float]]:
+    """Computes autocorrelation function using a multistep regression estimation.
+
+    Args:
+        timeseries (list[float]): timeseries to compute autocorrelation of.
+        stepnumber (int): number of regression steps to take.
+
+    Returns:
+        steps (list[int]): list of integer steps [1, 2, ..., stepnumber]
+        rk (list[float]): multistep regression estimate (autocorrelation function)
+    """
+    data=data[~pd.isna(data)]
+    minn=np.min(data)
+    maxx=np.max(data)
+    if type == "log":
+        logbins = np.logspace(np.log10(minn), np.log10(maxx), binnum)
+    else:
+        logbins = np.linspace(minn, maxx, binnum)
+    dens = np.histogram(data, bins=logbins, density=density)
+    x = dens[1][:-1]
+    y = dens[0]
+    return x, y
+
+
 def mrestimate(fires, steps, isi):
     """Computes autocorrelation function using a multistep regression estimation.
 
@@ -393,28 +436,6 @@ def powerspec(dt, data):
         dtype="int",
     )
     return [freq[L], sp[L]]
-
-
-# Function 17: Histogram
-def tyler_pdf(starts, binnum, minn, maxx, type, density):
-    """Computes autocorrelation function using a multistep regression estimation.
-
-    Args:
-        timeseries (list[float]): timeseries to compute autocorrelation of.
-        stepnumber (int): number of regression steps to take.
-
-    Returns:
-        steps (list[int]): list of integer steps [1, 2, ..., stepnumber]
-        rk (list[float]): multistep regression estimate (autocorrelation function)
-    """
-    if type == "log":
-        logbins = np.logspace(np.log10(minn), np.log10(maxx), binnum)
-    else:
-        logbins = np.linspace(minn, maxx, binnum)
-    density = np.histogram(starts, bins=logbins, density=density)
-    x = density[1][:-1]
-    y = density[0]
-    return [x, y]
 
 
 # Function 18: MSD
